@@ -1,0 +1,19 @@
+{
+    "name": "adeotek/php-wsdl",
+    "description": "SOAP WSDL Generator and server",
+    "type": "library",
+    "license": "LGPL-3.0",
+    "authors": [
+		{
+            "name": "George Benjamin-Schonberger",
+            "email": "george.benjamin@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "ext-soap": "*"
+    },
+	"autoload": {
+        "psr-4": { "PhpWsdl": "src" }
+    }
+}
