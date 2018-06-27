@@ -1,2 +1,2 @@
-# PHP WSDL Generator and Server
-Generate WSDL from PHP comments or programmatically, create SOAP WSDL server. 
+# PHP SOAP WSDL Generator and server
+Generate WSDL from PHP comments or programmatically and optionally create SOAP WSDL server.

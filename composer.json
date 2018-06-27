@@ -1,6 +1,6 @@
 {
     "name": "adeotek/php-wsdl",
-    "description": "SOAP WSDL Generator and server",
+    "description": "PHP SOAP WSDL Generator and server",
     "type": "library",
     "license": "LGPL-3.0",
     "authors": [
