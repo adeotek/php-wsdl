@@ -14,6 +14,6 @@
         "ext-soap": "*"
     },
 	"autoload": {
-        "psr-4": { "PhpWsdl": "src" }
+        "psr-4": { "PhpWsdl\\": "src" }
     }
 }
