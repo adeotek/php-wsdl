@@ -86,9 +86,9 @@ class Method extends BaseObject {
 			$return .= rtrim($pOrder).'"';
 		}//if(count($this->parameters)>1)
 		$return .= '>';
-		if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc)) {
+		if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc)) {
 			$return .= '<wsdl:documentation><![CDATA['.$this->desc.']]></wsdl:documentation>';
-		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc))
+		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc))
 		$return .= '<wsdl:input message="tns:'.$this->name.'SoapIn" />';
 		$return .= '<wsdl:output message="tns:'.$this->name.'SoapOut" />';
 		$return .= '</wsdl:operation>';
@@ -131,6 +131,7 @@ class Method extends BaseObject {
 	public function getMessagesWsdl(Generator $sender): string {
 		$result = '<wsdl:message name="'.$this->name.'SoapIn"';
 		if(count($this->parameters)) {
+			$result .= '>';
 			foreach($this->parameters as $parameter) { $result .= $parameter->getWsdl($sender); }
 			$result .= '</wsdl:message>';
 		} else {

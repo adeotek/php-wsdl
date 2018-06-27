@@ -91,7 +91,12 @@ class Generator {
 	 * @var array
 	 * @access protected
 	 */
-	protected $namespaces = [];
+	protected $namespaces = [
+		'soap'=>'http://schemas.xmlsoap.org/wsdl/soap/',
+		's'=>'http://www.w3.org/2001/XMLSchema',
+		'wsdl'=>'http://schemas.xmlsoap.org/wsdl/',
+		'soapenc'=>'http://schemas.xmlsoap.org/soap/encoding/'
+	];
 	/**
 	 * The SOAP endpoint URI
 	 *
@@ -107,6 +112,13 @@ class Generator {
 	 * @access protected
 	 */
 	protected $optimize = TRUE;
+	/**
+	 * Cache WSDL data
+	 *
+	 * @var bool
+	 * @access protected
+	 */
+	protected $cacheWsdl = FALSE;
 	/**
 	 * Include descriptions
 	 *
@@ -136,13 +148,6 @@ class Generator {
 	 */
 	protected $config = [];
 	/**
-	 * Cache WSDL data
-	 *
-	 * @var bool
-	 * @access protected
-	 */
-	protected $cacheWsdl = FALSE;
-	/**
 	 * Service name
 	 *
 	 * @var string
@@ -160,16 +165,16 @@ class Generator {
 	 * An array of ComplexType objects
 	 *
 	 * @var array
-	 * @access public
+	 * @access protected
 	 */
-	public $types = [];
+	protected $types = [];
 	/**
 	 * An array of Method objects
 	 *
 	 * @var array
-	 * @access public
+	 * @access protected
 	 */
-	public $methods = [];
+	protected $methods = [];
 	/**
 	 * Generator constructor.
 	 *
@@ -180,7 +185,7 @@ class Generator {
 	public function __construct(array $params = []) {
 		$this->cacheWsdl = isset($params['cacheWsdl']) ? $params['cacheWsdl'] : $this->cacheWsdl;
 		$this->optimize = isset($params['optimize']) ? $params['optimize'] : $this->optimize;
-		$this->includeDesc = isset($params['includeDesc']) ? $params['includeDesc'] : $this->includeDesc;
+		$this->includeDesc = $this->optimize ? FALSE : (isset($params['includeDesc']) ? $params['includeDesc'] : $this->includeDesc);
 		$this->namespace = $params['namespace'];
 		$this->endPoint = $params['endPoint'];
 		if(isset($params['namespaces']) && is_array($params['namespaces'])) { $this->namespaces = $params['namespaces']; }
@@ -190,6 +195,9 @@ class Generator {
 		}//if(isset($params['srcFiles']) && $params['srcFiles'])
 		$this->methods = isset($params['methods']) && is_array($params['methods']) ? $params['methods'] : [];
 		$this->types = isset($params['types']) && is_array($params['types']) ? $params['types'] : [];
+		$this->config = $params;
+		$this->config['tns'] = 'tns'; // The xmlns name for the target namespace
+		$this->config['xsd'] = 's'; // The xmlns name for the XSD namespace
 	}//END public function __construct
 	/**
 	 * Get namespace
@@ -289,7 +297,7 @@ class Generator {
 		if(count($this->types)) {
 			$result .= '<wsdl:types>';
 			$result .= '<s:schema targetNamespace="'.$this->namespace.'">';
-			foreach($this->types as $type) { $result .= $type->getType(); }
+			foreach($this->types as $type) { $result .= $type->getWsdl($this); }
 			$result .= '</s:schema>';
 			$result .= '</wsdl:types>';
 		}//if(count($this->types))
@@ -303,7 +311,7 @@ class Generator {
 	 */
 	public function getWsdlMessages() {
 		$result = '';
-		foreach($this->methods as $method) { $result .= $method->getMessages(); }
+		foreach($this->methods as $method) { $result .= $method->getMessagesWsdl($this); }
 		return $result;
 	}//END public function getWsdlMessages
 	/**
@@ -314,7 +322,7 @@ class Generator {
 	 */
 	public function getWsdlPorts() {
 		$result = '<wsdl:portType name="'.$this->serviceName.'Soap">';
-		foreach($this->methods as $method) {  $result .= $method->getPortType(); }
+		foreach($this->methods as $method) {  $result .= $method->getPortTypeWsdl($this); }
 		$result .= '</wsdl:portType>';
 		return $result;
 	}//END public function getWsdlPorts
@@ -327,7 +335,7 @@ class Generator {
 	public function getWsdlBindings() {
 		$result = '<wsdl:binding name="'.$this->serviceName.'Soap" type="tns:'.$this->serviceName.'Soap">';
 		$result .= '<soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="rpc" />';
-		foreach($this->methods as $method) {  $result .= $method->getBinding(); }
+		foreach($this->methods as $method) {  $result .= $method->getBindingWsdl($this); }
 		$result .= '</wsdl:binding>';
 		return $result;
 	}//END public function getWsdlBindings
@@ -379,13 +387,15 @@ class Generator {
 			$src = [];
 			foreach($this->srcFiles as $file) {
 				if(!file_exists($file)) {
-					//DEBUG
+					Debugger::addMessage('Source file ['.$file.'] not found!');
 					continue;
 				}//if(!file_exists($file))
 				$src[] = trim(file_get_contents($file));
 			}//END foreach
 		}//if(strlen($str))
-		Parser::parse(implode("\n",$src),$this);
+		$data = Parser::parse(implode("\n",$src),$this);
+		if(isset($data['types']) && is_array($data['types'])) { $this->types = $data['types']; }
+		if(isset($data['methods']) && is_array($data['methods'])) { $this->methods = $data['methods']; }
 	}//END protected function parseSource
 	/**
 	 * Create the WSDL
@@ -397,17 +407,16 @@ class Generator {
 	 */
 	public function generateWsdl(bool $reset = FALSE,?bool $optimize = NULL): string {
 		// // Ask the cache
-		if(!$reset && ($this->cacheWsdl || !$this->includeDesc || $optimize)) {
+		if(!$reset && $this->cacheWsdl && !$optimize) {
 			throw new \Exception('Not implemented yet!');
-		}//if(!$reset && ($this->cacheWsdl || !$this->includeDesc || $optimize))
-		// Parse sources
+		}//if(!$reset && $this->cacheWsdl && !$optimize)
 		$this->parseSource($reset);
 		if(!count($this->methods) || !count($this->types)) {
-			// self::Debug('No methods and types');
+			Debugger::addMessage('generateWsdl: No methods and types found!');
 			throw new \Exception('No methods and no complex types are available');
 		}//if(!count($this->methods) || !count($this->types))
 		if(!strlen($this->serviceName)) {
-			// self::Debug('No name');
+			Debugger::addMessage('generateWsdl: No service name!');
 			throw new \Exception('Could not determine webservice handler class name');
 		}//if(!strlen($this->serviceName))
 		$wsdl = $this->getWsdlHeader();
@@ -419,9 +428,9 @@ class Generator {
 		$wsdl .= $this->getWsdlFooter();
 		$wsdl = self::optimizeWsdl($wsdl,(isset($optimize) ? $optimize : $this->optimize));
 		// // Fill the cache
-		if($this->cacheWsdl || $optimize) {
+		if($this->cacheWsdl && !$optimize) {
 			Debugger::addMessage('WSDL cache not implemented yet!');
-		}//if($this->cacheWsdl || $optimize)
+		}//if($this->cacheWsdl && !$optimize)
 		return $wsdl;
 	}//END public function generateWsdl
 	/**
@@ -431,7 +440,7 @@ class Generator {
 	 * @return void
 	 * @throws \Exception
 	 */
-	public function outputWsdl(bool $withHeaders = TRUE): void {
+	public function outputWsdl(bool $withHeaders = FALSE): void {
 		if($withHeaders) { header('Content-Type: text/xml; charset=UTF-8',TRUE); }
 		echo $this->generateWsdl();
 	}//END public function outputWsdl
@@ -487,17 +496,17 @@ class Generator {
 		return preg_replace('/[\n|\t]/','',$xml);
 	}//END public static function optimizeXml
 	/**
-	 * Optimize WSDL
+	 * Optimize WSDL XML
 	 *
 	 * @param string $data WSDL string
-	 * @param bool   $formatOnly Only format the XML
-	 * @return string Optimized WSDL
+	 * @param bool   $readable Get the XML in human readable format
+	 * @return string Optimized WSDL XML
 	 * @throws \Exception
 	 * @acces public
 	 * @static
 	 */
-	public static function optimizeWsdl(string $data,bool $formatOnly = TRUE): string {
-		if($formatOnly) { return self::formatXml($data); }
+	public static function optimizeWsdl(string $data,bool $readable = TRUE): string {
+		if($readable) { return self::formatXml($data); }
 		return self::optimizeXml($data);
 	}//END public static function optimizeWsdl
 }//END class Generator

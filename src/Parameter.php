@@ -57,13 +57,13 @@ class Parameter extends BaseObject {
 	public function getWsdl(Generator $sender): string {
 		$return = '<wsdl:part name="'.$this->name.'" type="';
 		$return .= $sender->translateType($this->type).'"';
-		if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc)) {
+		if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc)) {
 			$return .= '>'."\n";
 			$return .= '<s:documentation><![CDATA['.$this->desc.']]></s:documentation>'."\n";
 			$return .= '</wsdl:part>';
 		} else {
 			$return .= ' />';
-		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc))
+		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc))
 		return $return;
 	}//END public function getWsdl
 	/**
@@ -72,9 +72,10 @@ class Parameter extends BaseObject {
 	 * @param $sender Generator instance
 	 * @param array $keyword
 	 * @param string $method
+	 * @param array $params
 	 * @return \PhpWsdl\Parameter|null Response
 	 */
-	public static function interpretParamKeyword(Generator $sender,array $keyword,string $method): ?Parameter {
+	public static function interpretParamKeyword(Generator $sender,array $keyword,string $method,array $params): ?Parameter {
 		if(!strlen($method)) { return NULL; }
 		$info = explode(' ',$keyword[1],3);
 		if(count($info)<2) {
@@ -82,7 +83,6 @@ class Parameter extends BaseObject {
 			return NULL;
 		}//if(count($info)<2)
 		$name = rtrim(substr($info[1],1),';');
-		$params = [];
 		if($sender->getIncludeDesc() && count($info)>2) { $params['desc'] = trim($info[2]); }
 		return new Parameter($name,$info[0],$params);
 	}//END public static function interpretParamKeyword
@@ -92,9 +92,10 @@ class Parameter extends BaseObject {
 	 * @param $sender Generator instance
 	 * @param array $keyword
 	 * @param string $method
+	 * @param array $params
 	 * @return \PhpWsdl\Parameter|null Response
 	 */
-	public static function interpretReturnKeyword(Generator $sender,array $keyword,string $method): ?Parameter {
+	public static function interpretReturnKeyword(Generator $sender,array $keyword,string $method,array $params): ?Parameter {
 		if(!strlen($method)) { return NULL; }
 		$info = explode(' ',$keyword[1],3);
 		if(count($info)<2) {
@@ -102,7 +103,6 @@ class Parameter extends BaseObject {
 			return NULL;
 		}//if(count($info)<2)
 		$name = str_replace('%method%',$method,self::$defaultReturnName);
-		$params = [];
 		if($sender->getIncludeDesc() && count($info)>2) { $params['desc'] = trim($info[2]); }
 		return new Parameter($name,$info[0],$params);
 	}//END public static function interpretReturnKeyword

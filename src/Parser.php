@@ -48,7 +48,6 @@ class Parser {
 	 * @static
 	 */
 	protected static $docsRegEx = '/^[^\*|\n]*\*[ |\t]+([^\*|\s|\@|\/|\n][^\n]*)?$/m';
-
 	/**
 	 * Parse a string
 	 *
@@ -58,32 +57,19 @@ class Parser {
 	 * @access public
 	 */
 	public static function parse(string $str,$sender) {
-		$result = [];
-		$data = [];
-		preg_match_all(self::$relevantDataRegEx,$str,$data);
-		for($i = 0;$i<count($data[0]);$i++) {
-			$d = $data[1][$i];
-			$m = $data[4][$i];
+		$result = ['types'=>[],'methods'=>[]];
+		$pd = [];
+		preg_match_all(self::$relevantDataRegEx,$str,$pd);
+		for($i = 0;$i<count($pd[0]);$i++) {
+			$d = $pd[1][$i];
+			$m = $pd[4][$i];
 			$k = [];
 			$t = [];
 			preg_match_all(self::$keywordsRegEx,$d,$t);
 			for($j = 0;$j<count($t[0]);$j++) {
 				$k[] = [$t[2][$j],trim($t[3][$j])];
 			}//END for
-			// if($sender->getIncludeDesc()) {
-			// 	$docs = [];
-			// 	$t = [];
-			// 	preg_match_all(self::$docsRegEx,$d,$t);
-			// 	for($j = 0;$j<count($t[0]);$j++) {
-			// 		$docs[] = trim($t[1][$j]);
-			// 	}//END for
-			// 	$docs = trim(implode("\n",$docs));
-			// 	if($docs=='') { $docs = NULL; }
-			// } else {
-			// 	$docs = NULL;
-			// }//if($sender->getIncludeDesc())
-			// self::interpretDefinition($result,$sender,$k,$m,$d,$docs);
-			self::interpretDefinition($result,$sender,$k,$m,$d);
+			self::interpretDefinition($result,$sender,$k,$m);
 		}//END for
 		return $result;
 	}//END public function parse
@@ -94,13 +80,14 @@ class Parser {
 	 * @param \PhpWsdl\Generator $sender
 	 * @param array  $keywords
 	 * @param string $method Method name
-	 * @param        $definition
 	 * @return void
 	 * @access public
 	 * @static
 	 */
-	public static function interpretDefinition(&$data,$sender,$keywords,$method,$definition) {
-		$result = [];
+	public static function interpretDefinition(&$data,$sender,$keywords,$method) {
+		$cfg = [];
+		$elements = [];
+		$return = NULL;
 		foreach($keywords as $keyword) {
 			switch($keyword[0]) {
 				case 'service':
@@ -109,22 +96,28 @@ class Parser {
 				case 'pw_set':
 					$result = Element::interpretSetKeyword($sender,$keyword);
 					if(!$result) { return; }
-					break;
-				case 'pw_complex':
-					$result = ComplexType::interpretComplexKeyword($sender,$keyword);
-					if(!$result) { return; }
+					$cfg = array_merge($cfg,$result);
 					break;
 				case 'pw_element':
-					$result = Element::interpretElementKeyword($sender,$keyword);
+					$result = Element::interpretElementKeyword($sender,$keyword,$cfg);
 					if(!$result) { return; }
+					$cfg = [];
+					$elements[] = $result;
 					break;
+				case 'pw_complex':
+					$obj = ComplexType::interpretComplexKeyword($sender,$keyword,$elements,$cfg);
+					if($obj) { $data['types'][] = $obj; }
+					return;
 				case 'param':
-					$result = Parameter::interpretParamKeyword($sender,$keyword,$method);
+					$result = Parameter::interpretParamKeyword($sender,$keyword,$method,$cfg);
 					if(!$result) { return; }
+					$cfg = [];
+					$elements[] = $result;
 					break;
 				case 'return':
-					$result = Parameter::interpretReturnKeyword($sender,$keyword,$method);
-					if(!$result) { return; }
+					$return = Parameter::interpretReturnKeyword($sender,$keyword,$method,$cfg);
+					if(!$return) { return; }
+					$cfg = [];
 					break;
 				case 'pw_ignore':
 				case 'ignore':
@@ -132,11 +125,9 @@ class Parser {
 				default:
 					break;
 			}//END switch
-			$result[$definition][$keyword[1]] = $result;
 		}//END foreach
-
-		// Method::createMethodObject();
-
-		if($result) { $data[] = $result; }
+		if(!strlen($method)) { return; }
+		$obj = new Method($method,$elements,$return,$cfg);
+		if($obj) { $data['methods'][] = $obj; }
 	}//END public static function interpretDefinition
 }//END class Parser

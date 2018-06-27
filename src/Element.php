@@ -67,7 +67,7 @@ class Element extends Parameter {
 	public function getWsdl(Generator $sender): string {
 		$return = '<s:element minOccurs="'.$this->minOccurs.'" maxOccurs="'.$this->maxOccurs.'" nillable="'.($this->nillable ? 'true' : 'false').'" name="'.$this->name.'" type="';
 		$return .= $sender->translateType($this->type).'"';
-		if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc)) {
+		if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc)) {
 			$return .= '>'."\n";
 			$return .= '<s:annotation>'."\n";
 			$return .= '<s:documentation><![CDATA['.$this->desc.']]></s:documentation>'."\n";
@@ -75,7 +75,7 @@ class Element extends Parameter {
 			$return .= '</s:element>';
 		} else {
 			$return .= ' />';
-		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc))
+		}//if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc))
 		return $return;
 	}//END public function getWsdl
 	/**
@@ -83,18 +83,18 @@ class Element extends Parameter {
 	 *
 	 * @param \PhpWsdl\Generator $sender Generator instance
 	 * @param array $keyword
+	 * @param array $params
 	 * @return \PhpWsdl\Element|null Response
 	 * @access public
 	 * @static
 	 */
-	public static function interpretElementKeyword($sender,array $keyword): ?Element {
+	public static function interpretElementKeyword($sender,array $keyword,array $params): ?Element {
 		$info = explode(' ',$keyword[1],3);
 		if(!count($info)) {
 			Debugger::addMessage('WARNING: Invalid element definition');
 			return NULL;
 		}//if(!count($info))
 		$name = rtrim(substr($info[1],1),';');
-		$params = [];
 		if($sender->getIncludeDesc() && count($info)>2) { $params['desc'] = trim($info[2]); }
 		return new Element($name,$info[0],$params);
 	}//END public static function interpretElementKeyword

@@ -54,7 +54,7 @@ class ComplexType extends BaseObject {
 	 * @return void
 	 * @access public
 	 */
-	public function __construct(string $name,string $type = 'string',array $elements = [],?array $params = NULL) {
+	public function __construct(string $name,?string $type = NULL,array $elements = [],?array $params = NULL) {
 		parent::__construct($name,$params);
 		$this->type = $type;
 		$this->elements = $elements;
@@ -84,7 +84,7 @@ class ComplexType extends BaseObject {
 	 */
 	public function getWsdl(Generator $sender): string {
 		$return = '<s:complexType name="'.$this->name.'">';
-		if($sender->getIncludeDesc() && !$sender->getOptimize() && !strlen($this->desc)) {
+		if($sender->getIncludeDesc() && !$sender->getOptimize() && strlen($this->desc)) {
 			$return .= '<s:annotation>';
 			$return .= '<s:documentation><![CDATA['.$this->desc.']]></s:documentation>';
 			$return .= '</s:annotation>';
@@ -109,11 +109,13 @@ class ComplexType extends BaseObject {
 	 *
 	 * @param \PhpWsdl\Generator $sender Generator instance
 	 * @param array $keyword
+	 * @param array $elements
+	 * @param array $params
 	 * @return \PhpWsdl\ComplexType|null Response
 	 * @access public
 	 * @static
 	 */
-	public static function interpretComplexKeyword($sender,array $keyword): ?ComplexType {
+	public static function interpretComplexKeyword($sender,array $keyword,array $elements,array $params): ?ComplexType {
 		$info = explode(' ',$keyword[1],3);
 		if(!count($info)) {
 			Debugger::addMessage('WARNING: Invalid complex definition');
@@ -146,6 +148,7 @@ class ComplexType extends BaseObject {
 				$desc = (count($info)>2 ? $info[1].' '.$info[2] : $info[1]);
 			}//if($sender->getIncludeDesc() && count($info)>1)
 		}//END if(strpos($info[0],'[]')!==FALSE)
-		return new ComplexType($name,$type,[],['desc'=>$desc]);
+		$params['desc'] = $desc;
+		return new ComplexType($name,$type,$elements,$params);
 	}//END public static function interpretComplexKeyword
 }//END class ComplexType extends BaseObject

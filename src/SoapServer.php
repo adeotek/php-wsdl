@@ -81,7 +81,7 @@ class SoapServer {
 		if(isset($params['wsdlConfig']) && is_array($params['wsdlConfig'])) { $this->wsdlConfig = $params['wsdlConfig']; }
 		// SOAP server options
 		$this->soapServerOptions = [
-			'soap_version'=>SOAP_1_1 | SOAP_1_2,
+			'soap_version'=>(isset($params['soapVersion']) && is_integer($params['soapVersion']) ? $params['soapVersion'] : SOAP_1_2),
 			'encoding'=>'UTF-8',
 			'compression'=>SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP | 9
 		];
@@ -119,7 +119,7 @@ class SoapServer {
 			$this->wsdlConfig['endPoint'] = $this->endPoint;
 			$this->wsdlConfig['optimize'] = !isset($_GET['readable']); // Call with "?WSDL&readable" to get human readable WSDL
 			$generator = new Generator($this->wsdlConfig);
-			$generator->outputWsdl();
+			$generator->outputWsdl(TRUE);
 		} else {
 			if(!strlen($this->className) || !strlen($this->serviceUri)) {
 				header('HTTP/1.0 500 Invalid SoapServer configuration');
