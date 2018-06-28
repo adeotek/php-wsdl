@@ -50,7 +50,7 @@ To install manually install the library, is only necessary to copy the content o
 
 ## How to use PhpWsdl
 
-####Classes description
+###Classes description
 - AdeoTEK\PhpWsdl\SoapServer
     - SOAP server class (uses PHP SoapServer class)
 - AdeoTEK\PhpWsdl\Generator
@@ -72,7 +72,7 @@ To install manually install the library, is only necessary to copy the content o
 - AdeoTEK\PhpWsdl\Debugger
     - Class used for debugging
 
-####Keywords processed by the parser in order to generate WSDL definitions:
+###Keywords processed by the parser in order to generate WSDL definitions:
 - @pw_complex
     - A complex type (array/class)
 - @pw_element
@@ -86,7 +86,7 @@ Key-value options can be provided for complex types and/or their properties.
 The options are defined using `@pw_set` keyword and must be placed right before the target element.
 
 ###Usage
-####Simple usage example (SoapServer)
+- Simple usage example (SoapServer)
 ``` php
 $soapServer = new AdeoTEK\PhpWsdl\SoapServer([
     'className'=>'\Some\Class',
