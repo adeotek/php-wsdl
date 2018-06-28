@@ -1,6 +1,7 @@
 {
     "name": "adeotek/php-wsdl",
     "description": "PHP SOAP WSDL Generator and server",
+	"keywords": ["php","soap","wsdl"],
     "type": "library",
     "license": "LGPL-3.0",
     "authors": [
@@ -14,6 +15,6 @@
         "ext-soap": "*"
     },
 	"autoload": {
-        "psr-4": { "PhpWsdl\\": "src" }
+        "psr-4": { "AdeoTEK\\PhpWsdl\\": "src" }
     }
 }

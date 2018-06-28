@@ -11,7 +11,7 @@
  * @version    1.0.0
  * @filesource
  */
-namespace PhpWsdl;
+namespace AdeoTEK\PhpWsdl;
 /**
   * BaseObject class
   *
@@ -19,7 +19,7 @@ namespace PhpWsdl;
   *
   * @package  PhpWsdl
   */
-class BaseObject {
+abstract class BaseObject {
 	/**
 	 * The GUID
 	 *
@@ -61,4 +61,4 @@ class BaseObject {
 			if(isset($params['config'])) { $this->config = $params['config']; }
 		}//if(isset($params))
 	}//END public function __construct
-}//END class BaseObject
+}//END abstract class BaseObject
